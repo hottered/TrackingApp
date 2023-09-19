@@ -115,14 +115,13 @@ dependencies {
 
 
 //    // Easy Permissions
-//    implementation ("pub.devrel:easypermissions:3.0.0")
+    implementation ("pub.devrel:easypermissions:3.0.0")
 //
 //    // Timber
-//    implementation (" 'com.jakewharton.timber:timber:4.7.1'")
+
     implementation ("com.jakewharton.timber:timber:5.0.1")
-//
 //    // MPAndroidChart
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
-//
+    
 //    implementation ("android.arch.lifecycle:extensions:1.1.1")
 }

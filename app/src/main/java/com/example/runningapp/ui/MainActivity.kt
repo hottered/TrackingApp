@@ -13,6 +13,7 @@ import androidx.navigation.ui.setupWithNavController
 import com.example.runningapp.R
 import com.example.runningapp.databinding.ActivityMainBinding
 import com.example.runningapp.db.RunDao
+import com.example.runningapp.other.TrackingUtility
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -41,4 +42,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
     }
+    
+    
 }
