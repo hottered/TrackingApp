@@ -1,5 +1,6 @@
 ﻿package com.example.runningapp.services
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.NotificationManager.IMPORTANCE_LOW
@@ -7,37 +8,68 @@ import android.app.PendingIntent
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.content.Context
 import android.content.Intent
+import android.location.Location
 import android.os.Build
-import android.util.Log
+import android.os.Looper
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import com.example.runningapp.R
 import com.example.runningapp.other.Constance.ACTION_PAUSE_SERVICE
 import com.example.runningapp.other.Constance.ACTION_SHOW_TRACKING_FRAGMENT
 import com.example.runningapp.other.Constance.ACTION_START_OR_RESUME_SERVICE
 import com.example.runningapp.other.Constance.ACTION_STOP_SERVICE
+import com.example.runningapp.other.Constance.FASTEST_LOCATION_INTERVAL
+import com.example.runningapp.other.Constance.LOCATION_UPDATE_INTERVAL
 import com.example.runningapp.other.Constance.NOTIFICATION_CHANNEL_ID
 import com.example.runningapp.other.Constance.NOTIFICATION_CHANNEL_NAME
 import com.example.runningapp.other.Constance.NOTIFICATION_ID
+import com.example.runningapp.other.TrackingUtility
 import com.example.runningapp.ui.MainActivity
-import com.example.runningapp.ui.MainActivity_GeneratedInjector
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.maps.model.LatLng
 import timber.log.Timber
 
+typealias Polyline = MutableList<LatLng>
+typealias Polylines = MutableList<Polyline>
+
 class TrackingService : LifecycleService() {
-    
+
     var isFirstRun = true
-    
+
+    lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    companion object {
+        val isTracking = MutableLiveData<Boolean>()
+        val pathPoints = MutableLiveData<Polylines>()
+    }
+
+    private fun postInitialValues() {
+        isTracking.postValue(false)
+        pathPoints.postValue(mutableListOf())
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        postInitialValues()
+        fusedLocationProviderClient = FusedLocationProviderClient(this)
+        isTracking.observe(this, Observer { 
+            updateLocationTracking(it)
+        })
+    }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
         intent?.let {
             when (it.action) {
                 ACTION_START_OR_RESUME_SERVICE -> {
-                    if(isFirstRun){
+                    if (isFirstRun) {
                         startForegroundService()
                         isFirstRun = false
-                    }
-                    else{
+                    } else {
                         Timber.d("Resuming service...")
                     }
                     Timber.d("Started or resumed service")
@@ -56,7 +88,65 @@ class TrackingService : LifecycleService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    @SuppressLint("MissingPermission")
+    private fun updateLocationTracking(isTracking: Boolean) {
+        if (isTracking) {
+            if(TrackingUtility.hasLocationPermission(this)){
+                val request = com.google.android.gms.location.LocationRequest().apply { 
+                    interval = LOCATION_UPDATE_INTERVAL
+                    fastestInterval = FASTEST_LOCATION_INTERVAL
+                    priority = PRIORITY_HIGH_ACCURACY
+                }
+                fusedLocationProviderClient.requestLocationUpdates(
+                    request,
+                    locationCallBack,
+                    Looper.getMainLooper()
+                )
+            }
+        } else {
+            fusedLocationProviderClient.removeLocationUpdates(locationCallBack)
+        }
+    }
+
+    val locationCallBack = object : LocationCallback() {
+        override fun onLocationResult(result: LocationResult?) {
+            super.onLocationResult(result)
+            if (isTracking.value!!) {
+                result?.locations?.let { locations ->
+
+                    for (location in locations) {
+                        addPathPoint(location)
+                        Timber.d("NEW LOCATION,${location.latitude} ,${location.longitude}")
+                    }
+
+                }
+
+            }
+
+        }
+    }
+
+    private fun addPathPoint(location: Location?) {
+        location?.let {
+            val pos = LatLng(location.latitude, location.longitude)
+            pathPoints.value?.apply {
+                last().add(pos)
+                pathPoints.postValue(this)
+            }
+        }
+    }
+
+    private fun addEmptyPolyline() = pathPoints.value?.apply {
+        add(mutableListOf())
+        pathPoints.postValue(this)
+    } ?: pathPoints.postValue(mutableListOf(mutableListOf()))
+
     private fun startForegroundService() {
+
+        addEmptyPolyline()
+        
+        isTracking.postValue(true)
+
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE)
                 as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -69,8 +159,8 @@ class TrackingService : LifecycleService() {
             .setContentTitle("Running App")
             .setContentText("00:00:00")
             .setContentIntent(getMainActivityPendingIntent())
-        
-        startForeground(NOTIFICATION_ID,notificationBuilder.build())
+
+        startForeground(NOTIFICATION_ID, notificationBuilder.build())
     }
 
     private fun getMainActivityPendingIntent() = PendingIntent.getActivity(
@@ -82,8 +172,9 @@ class TrackingService : LifecycleService() {
             it.action = ACTION_SHOW_TRACKING_FRAGMENT
         },
         FLAG_UPDATE_CURRENT //wehener we lauch the intent it will be updated instead of creating again
-        
+
     )
+
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel(notificationManager: NotificationManager) {
         val channel = NotificationChannel(
