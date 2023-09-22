@@ -15,6 +15,7 @@ import com.example.runningapp.other.Constance.ACTION_START_OR_RESUME_SERVICE
 import com.example.runningapp.other.Constance.MAP_ZOOM
 import com.example.runningapp.other.Constance.POLYLINE_COLOR
 import com.example.runningapp.other.Constance.POLYLINE_WIDTH
+import com.example.runningapp.other.TrackingUtility
 import com.example.runningapp.services.Polyline
 import com.example.runningapp.services.Polylines
 import com.example.runningapp.services.TrackingService
@@ -36,6 +37,8 @@ class TrackingFragment : Fragment() {
     private var pathPoints = mutableListOf<Polyline>()
 
     private var map: GoogleMap? = null
+    
+    private var currentTimeMillis = 0L
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -70,6 +73,11 @@ class TrackingFragment : Fragment() {
             pathPoints = it
             addLatestPolyline()
             moveCameraToUser()
+        })
+        TrackingService.timeRunInMillis.observe(viewLifecycleOwner, Observer { 
+            currentTimeMillis = it
+            val formattedTime = TrackingUtility.getFormattedStopWatchTime(currentTimeMillis,true)
+            binding.tvTimer.text = formattedTime
         })
     }
 
@@ -133,6 +141,7 @@ class TrackingFragment : Fragment() {
             it.action = action
             requireContext().startService(it)
         }
+        
     }
 
     override fun onResume() {
