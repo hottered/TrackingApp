@@ -2,13 +2,24 @@
 
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.runningapp.db.Run
 import com.example.runningapp.repositories.MainRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     val mainRepository: MainRepository
 ) : ViewModel(),LifecycleObserver{
+    
+    fun insertRun(run : Run) = viewModelScope.launch {
+        mainRepository.insertRun(run)
+    }
+
+//    fun insertRun(run : Run) {
+//        mainRepository.insertRun(run)
+//    }
     
 }

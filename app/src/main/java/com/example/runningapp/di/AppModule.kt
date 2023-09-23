@@ -24,7 +24,9 @@ object AppModule {
         app,
         RunningDatabase::class.java,
         RUNNING_DATABASE_NAME
-    ).build()
+    )
+        .allowMainThreadQueries()
+        .build()
     
     @Singleton
     @Provides
