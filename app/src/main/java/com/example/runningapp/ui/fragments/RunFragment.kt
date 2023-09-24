@@ -27,8 +27,7 @@ import pub.devrel.easypermissions.EasyPermissions
 class RunFragment : Fragment(),EasyPermissions.PermissionCallbacks {
 
     private lateinit var binding: FragmentRunBinding
-
-
+    
     private lateinit var runAdapter: RunAdapter
     
     private val viewModel: MainViewModel by viewModels()
