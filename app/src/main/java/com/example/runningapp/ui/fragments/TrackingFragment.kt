@@ -38,6 +38,7 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.ObjectStreamException
 import java.util.Calendar
+import javax.inject.Inject
 import kotlin.math.round
 
 
@@ -57,7 +58,8 @@ class TrackingFragment : Fragment() {
 
     private var menu: Menu? = null
     
-    private var weight = 80f
+    @set:Inject
+    var weight = 80f
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
