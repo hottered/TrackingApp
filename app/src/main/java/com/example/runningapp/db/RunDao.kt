@@ -11,7 +11,7 @@ import androidx.room.Query
 interface RunDao {
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertRun(run:Run)
+     fun insertRun(run:Run) : Long
     
     @Delete
     fun deleteRun(run:Run)
@@ -30,7 +30,10 @@ interface RunDao {
 
     @Query("SELECT * FROM running_table ORDER BY distanceInMeters DESC")
     fun getAllRunSortedByDistance() : LiveData<List<Run>>
-    
+
+
+    @Query("SELECT SUM(timeInMillis) FROM running_table")
+    fun getTotalTimeInMillis(): LiveData<Long>
     @Query("SELECT SUM(caloriesBurned) FROM running_table")
     fun getTotalCaloriesBurned() : LiveData<Int>
 
